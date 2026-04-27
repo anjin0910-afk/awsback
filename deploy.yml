@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
 
 env:
-  AWS_REGION: ap-northeast-2
+  AWS_REGION: us-east-2
   ECR_REPOSITORY: aws-lab-app
 
 jobs:
@@ -65,7 +65,7 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         envs: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
         script: |
-          aws ecr get-login-password --region ap-northeast-2 | sudo docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
+          aws ecr get-login-password --region us-east-2 | sudo docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
           sudo docker stop aws-lab-app || true
           sudo docker rm aws-lab-app || true
           sudo docker pull ${{ steps.login-ecr.outputs.registry }}/aws-lab-app:latest
@@ -73,4 +73,4 @@ jobs:
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: ap-northeast-2
+        AWS_REGION: us-east-2
