@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
 
 env:
-  AWS_REGION: ap-northeast-2
+  AWS_REGION: us-east-2
   ECR_REPOSITORY: aws-lab-app
 
 jobs:
@@ -86,7 +86,7 @@ jobs:
           sudo docker network create app-network || true
           
           # 2. 백엔드 배포 (RDS DB 연결 및 AWS 자격 증명 주입)
-          aws ecr get-login-password --region ap-northeast-2 | sudo docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
+          aws ecr get-login-password --region us-east-2 | sudo docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
           sudo docker rm -f aws-lab-app || true
           sudo docker pull ${{ steps.login-ecr.outputs.registry }}/aws-lab-app:latest
           sudo docker run -d --name aws-lab-app --network app-network --memory="400m" -p 8080:8080 -e SPRING_DATASOURCE_URL="${{ secrets.SPRING_DATASOURCE_URL }}" -e SPRING_DATASOURCE_USERNAME="${{ secrets.SPRING_DATASOURCE_USERNAME }}" -e SPRING_DATASOURCE_PASSWORD="${{ secrets.SPRING_DATASOURCE_PASSWORD }}" -e AWS_S3_BUCKET="${{ secrets.S3_BUCKET_NAME }}" -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" ${{ steps.login-ecr.outputs.registry }}/aws-lab-app:latest
@@ -97,7 +97,7 @@ jobs:
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: ap-northeast-2
+        AWS_REGION: us-east-2
         SPRING_DATASOURCE_URL: ${{ secrets.SPRING_DATASOURCE_URL }}
         SPRING_DATASOURCE_USERNAME: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
         SPRING_DATASOURCE_PASSWORD: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
