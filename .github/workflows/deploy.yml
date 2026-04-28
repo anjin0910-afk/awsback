@@ -65,6 +65,8 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         envs: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
         script: |
+          set -e
+
           # 1. 필수 패키지(Docker, AWS CLI)가 없으면 자동 설치
           if ! type docker > /dev/null 2>&1 || ! type aws > /dev/null 2>&1; then
             echo "Docker or AWS CLI is not installed. Installing..."
@@ -82,17 +84,37 @@ jobs:
             sudo mkswap /swapfile
             sudo swapon /swapfile
           fi
-          
+
           sudo docker network create app-network || true
-          
-          # 2. 백엔드 배포 (RDS DB 연결 및 AWS 자격 증명 주입)
+
+          # 2. 백엔드 배포 (RDS DB 연결)
+          echo ">>> ECR 로그인 중..."
           aws ecr get-login-password --region us-east-2 | sudo docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
+
+          echo ">>> 기존 컨테이너 제거..."
           sudo docker rm -f aws-lab-app || true
+
+          echo ">>> 이미지 Pull 중..."
           sudo docker pull ${{ steps.login-ecr.outputs.registry }}/aws-lab-app:latest
-          sudo docker run -d --name aws-lab-app --network app-network --memory="400m" -p 8080:8080 -e SPRING_DATASOURCE_URL="${{ secrets.SPRING_DATASOURCE_URL }}" -e SPRING_DATASOURCE_USERNAME="${{ secrets.SPRING_DATASOURCE_USERNAME }}" -e SPRING_DATASOURCE_PASSWORD="${{ secrets.SPRING_DATASOURCE_PASSWORD }}" -e AWS_S3_BUCKET="${{ secrets.S3_BUCKET_NAME }}" -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" ${{ steps.login-ecr.outputs.registry }}/aws-lab-app:latest
-          
-          echo "Backend container logs:"
-          sleep 5
+
+          echo ">>> 컨테이너 실행 중..."
+          sudo docker run -d --name aws-lab-app --network app-network \
+            -p 8080:8080 \
+            -e SPRING_DATASOURCE_URL="${{ secrets.SPRING_DATASOURCE_URL }}" \
+            -e SPRING_DATASOURCE_USERNAME="${{ secrets.SPRING_DATASOURCE_USERNAME }}" \
+            -e SPRING_DATASOURCE_PASSWORD="${{ secrets.SPRING_DATASOURCE_PASSWORD }}" \
+            -e AWS_S3_BUCKET="${{ secrets.S3_BUCKET_NAME }}" \
+            -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
+            -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+            ${{ steps.login-ecr.outputs.registry }}/aws-lab-app:latest
+
+          echo ">>> 컨테이너 시작 대기(10초)..."
+          sleep 10
+
+          echo ">>> 실행 중인 컨테이너:"
+          sudo docker ps -a
+
+          echo ">>> 백엔드 로그:"
           sudo docker logs aws-lab-app
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
