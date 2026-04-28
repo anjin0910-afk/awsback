@@ -18,6 +18,9 @@ WORKDIR /app
 # 빌드 스테이지에서 생성된 jar 파일만 복사
 COPY --from=build /app/build/libs/*.jar app.jar
 
+# RDS SSL 인증서 다운로드
+RUN curl -sS -o /app/global-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+
 # 실행 포트
 EXPOSE 8080
 
