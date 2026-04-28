@@ -52,3 +52,9 @@ spring:
 # 프론트엔드 주소 (CORS 및 리다이렉트 설정에 사용)
 app:
   frontend-url: http://localhost:5173
+
+cloud:
+  aws:
+    region: ap-northeast-2
+    s3:
+      bucket: ${AWS_S3_BUCKET:my-bucket-name}
