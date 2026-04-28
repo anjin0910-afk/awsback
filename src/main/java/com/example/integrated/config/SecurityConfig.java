@@ -45,6 +45,10 @@ public class SecurityConfig {
                                 "/h2-console/**",
                                 "/oauth2/**",
                                 "/login/**",
+                                "/api/upload",
+                                "/api/preview/**",
+                                "/api/hello",
+                                "/health",
                                 "/error")
                         .permitAll()
                         // 나머지 모든 요청은 로그인 필요
@@ -72,8 +76,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // 허용할 오리진 설정: 로컬 개발 환경 및 도커 서비스 이름 포함
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://frontend:5173", "http://localhost:80"));
+        // 허용할 오리진 패턴 설정: 모든 도메인 허용 (allowCredentials=true일 때는 allowedOrigins("*") 사용 불가)
+        configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
