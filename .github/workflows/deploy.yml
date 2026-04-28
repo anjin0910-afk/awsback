@@ -65,6 +65,16 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         envs: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
         script: |
+          # 1. 필수 패키지(Docker, AWS CLI)가 없으면 자동 설치
+          if ! type docker > /dev/null 2>&1 || ! type aws > /dev/null 2>&1; then
+            echo "Docker or AWS CLI is not installed. Installing..."
+            sudo apt-get update -y
+            sudo apt-get install -y docker.io awscli
+            sudo systemctl start docker
+            sudo systemctl enable docker
+            sudo usermod -aG docker ubuntu
+          fi
+
           aws ecr get-login-password --region ap-northeast-2 | sudo docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
           sudo docker stop aws-lab-app || true
           sudo docker rm aws-lab-app || true
