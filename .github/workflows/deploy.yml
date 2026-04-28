@@ -75,17 +75,25 @@ jobs:
             sudo usermod -aG docker ubuntu
           fi
 
+          # 1.5 Swap 메모리 설정 (OOM 방지)
+          if [ ! -f /swapfile ]; then
+            sudo fallocate -l 2G /swapfile
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile
+            sudo swapon /swapfile
+          fi
+          
           sudo docker network create app-network || true
           
-          # 2. MySQL DB 실행
+          # 2. MySQL DB 실행 (메모리 제한)
           sudo docker rm -f db || true
-          sudo docker run -d --name db --network app-network -e MYSQL_DATABASE=mydb -e MYSQL_ROOT_PASSWORD=mypass -e MYSQL_USER=myuser -e MYSQL_PASSWORD=mypass mysql:8.0
+          sudo docker run -d --name db --network app-network --memory="350m" -e MYSQL_DATABASE=mydb -e MYSQL_ROOT_PASSWORD=mypass -e MYSQL_USER=myuser -e MYSQL_PASSWORD=mypass mysql:8.0
           
-          # 3. 백엔드 배포
+          # 3. 백엔드 배포 (메모리 제한)
           aws ecr get-login-password --region ap-northeast-2 | sudo docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
           sudo docker rm -f aws-lab-app || true
           sudo docker pull ${{ steps.login-ecr.outputs.registry }}/aws-lab-app:latest
-          sudo docker run -d --name aws-lab-app --network app-network -p 8080:8080 -e SPRING_DATASOURCE_URL="jdbc:mysql://db:3306/mydb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" -e SPRING_DATASOURCE_USERNAME="myuser" -e SPRING_DATASOURCE_PASSWORD="mypass" -e AWS_S3_BUCKET="${{ secrets.S3_BUCKET_NAME }}" ${{ steps.login-ecr.outputs.registry }}/aws-lab-app:latest
+          sudo docker run -d --name aws-lab-app --network app-network --memory="400m" -p 8080:8080 -e SPRING_DATASOURCE_URL="jdbc:mysql://db:3306/mydb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" -e SPRING_DATASOURCE_USERNAME="myuser" -e SPRING_DATASOURCE_PASSWORD="mypass" -e AWS_S3_BUCKET="${{ secrets.S3_BUCKET_NAME }}" ${{ steps.login-ecr.outputs.registry }}/aws-lab-app:latest
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
